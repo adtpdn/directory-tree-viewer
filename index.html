@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html class="dark">
+<head>
+    <title>Directory Tree Viewer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        dark: {
+                            100: '#1E293B',
+                            200: '#0F172A',
+                            300: '#334155'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-100 dark:bg-dark-200 min-h-screen transition-colors duration-200">
+    <div class="container mx-auto p-6">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100">Directory Tree Viewer</h1>
+            <button id="themeToggle" class="p-2 rounded-lg bg-gray-200 dark:bg-dark-300 text-gray-700 dark:text-gray-300">
+                <i class="fas fa-moon dark:hidden"></i>
+                <i class="fas fa-sun hidden dark:block"></i>
+            </button>
+        </div>
+        
+        <div class="flex gap-6">
+            <!-- Config Panel -->
+            <div class="w-1/3 bg-white dark:bg-dark-100 rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-4">Configuration</h2>
+
+                <!-- File Input -->
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Select Directory</label>
+                    <input type="file" id="fileInput" webkitdirectory directory multiple
+                        class="block w-full text-sm text-gray-500 dark:text-gray-400
+                        file:mr-4 file:py-2 file:px-4
+                        file:rounded-full file:border-0
+                        file:text-sm file:font-semibold
+                        file:bg-blue-50 file:text-blue-700
+                        dark:file:bg-dark-300 dark:file:text-blue-400
+                        hover:file:bg-blue-100 dark:hover:file:bg-dark-200">
+                </div>
+
+                <!-- Ignore Patterns -->
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Ignore Patterns (one per line)</label>
+                    <textarea id="ignorePatterns" 
+                        class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg 
+                        focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600
+                        bg-white dark:bg-dark-300"
+                        rows="4">.git
+node_modules
+*.log
+*.tmp
+.DS_Store
+*.cfg
+*.import
+.godot/</textarea>
+                </div>
+
+                <!-- Display Options -->
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Display Options</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="showFiles" checked 
+                                class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 dark:bg-dark-300">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Show Files</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="showFolders" checked 
+                                class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 dark:bg-dark-300">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Show Folders</span>
+                        </label>
+                        <label class="flex items-center space-x-2">
+                            <input type="checkbox" id="showHidden" 
+                                class="w-4 h-4 text-blue-600 rounded focus:ring-blue-500 dark:bg-dark-300">
+                            <span class="text-sm text-gray-600 dark:text-gray-400">Show Hidden Files</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Extensions -->
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">
+                        File Extensions to Show (comma-separated)
+                    </label>
+                    <input type="text" id="extensions" placeholder="js,html,css"
+                        class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg 
+                        focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600
+                        bg-white dark:bg-dark-300">
+                </div>
+
+                <!-- Max Depth -->
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-medium text-gray-600 dark:text-gray-400">Max Depth (0 = unlimited)</label>
+                    <input type="number" id="maxDepth" value="0" min="0"
+                        class="w-full px-3 py-2 text-gray-700 dark:text-gray-300 border dark:border-gray-600 rounded-lg 
+                        focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600
+                        bg-white dark:bg-dark-300">
+                </div>
+            </div>
+
+            <!-- Tree Output -->
+            <div class="w-2/3 bg-white dark:bg-dark-100 rounded-lg shadow-lg p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-gray-700 dark:text-gray-200">Directory Tree</h2>
+                    <button id="copyButton" 
+                        class="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg 
+                        hover:bg-blue-600 dark:hover:bg-blue-700 
+                        focus:outline-none focus:ring-2 focus:ring-blue-400 dark:focus:ring-blue-600 
+                        flex items-center gap-2 transition-colors">
+                        <i class="fas fa-copy"></i>
+                        Copy Tree
+                    </button>
+                </div>
+                <pre id="treeOutput" 
+                    class="bg-gray-50 dark:bg-dark-300 p-4 rounded-lg font-mono text-sm overflow-x-auto 
+                    max-h-[calc(100vh-250px)] overflow-y-auto text-gray-700 dark:text-gray-300"></pre>
+            </div>
+        </div>
+    </div>
+    <script>
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        themeToggle.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            // Optional: Save preference to localStorage
+            const isDark = document.documentElement.classList.contains('dark');
+            localStorage.setItem('darkMode', isDark);
+        });
+
+        // Check for saved theme preference
+        if (localStorage.getItem('darkMode') === 'false') {
+            document.documentElement.classList.remove('dark');
+        }
+
+        const fileInput = document.getElementById('fileInput');
+        const treeOutput = document.getElementById('treeOutput');
+        const ignorePatterns = document.getElementById('ignorePatterns');
+        const showFiles = document.getElementById('showFiles');
+        const showFolders = document.getElementById('showFolders');
+        const showHidden = document.getElementById('showHidden');
+        const extensions = document.getElementById('extensions');
+        const maxDepth = document.getElementById('maxDepth');
+        const copyButton = document.getElementById('copyButton');
+
+        // Copy button functionality
+        copyButton.addEventListener('click', () => {
+            navigator.clipboard.writeText(treeOutput.textContent).then(() => {
+                const originalText = copyButton.innerHTML;
+                copyButton.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                copyButton.classList.remove('bg-blue-500', 'dark:bg-blue-600');
+                copyButton.classList.add('bg-green-500', 'dark:bg-green-600');
+                
+                setTimeout(() => {
+                    copyButton.innerHTML = originalText;
+                    copyButton.classList.remove('bg-green-500', 'dark:bg-green-600');
+                    copyButton.classList.add('bg-blue-500', 'dark:bg-blue-600');
+                }, 2000);
+            });
+        });
+
+        // Update tree when any configuration changes
+        [ignorePatterns, showFiles, showFolders, showHidden, extensions, maxDepth].forEach(element => {
+            element.addEventListener('change', () => {
+                if (fileInput.files.length > 0) {
+                    processFiles(fileInput.files);
+                }
+            });
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            processFiles(e.target.files);
+        });
+
+        function processFiles(files) {
+            const tree = createFileTree(files);
+            const treeString = generateTreeString(tree);
+            treeOutput.textContent = treeString;
+        }
+
+        function shouldIncludeFile(path) {
+            const filename = path.split('/').pop();
+            
+            if (!showHidden.checked && filename.startsWith('.')) {
+                return false;
+            }
+
+            const patterns = ignorePatterns.value.split('\n').filter(p => p.trim());
+            for (const pattern of patterns) {
+                if (pattern.trim()) {
+                    const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+                    if (regex.test(path)) {
+                        return false;
+                    }
+                }
+            }
+
+            const allowedExtensions = extensions.value
+                .split(',')
+                .map(ext => ext.trim())
+                .filter(ext => ext);
+            
+            if (allowedExtensions.length > 0) {
+                const fileExt = filename.split('.').pop().toLowerCase();
+                if (!allowedExtensions.includes(fileExt)) {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        function createFileTree(files) {
+            const root = {};
+            
+            for (const file of files) {
+                const path = file.webkitRelativePath;
+                if (!shouldIncludeFile(path)) continue;
+
+                const parts = path.split('/');
+                const depth = parseInt(maxDepth.value);
+                if (depth > 0 && parts.length > depth) continue;
+
+                let current = root;
+                
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    const isFile = i === parts.length - 1;
+                    
+                    if (isFile && !showFiles.checked) continue;
+                    if (!isFile && !showFolders.checked) continue;
+
+                    if (!current[part]) {
+                        current[part] = {};
+                    }
+                    current = current[part];
+                }
+            }
+            
+            return root;
+        }
+
+        function generateTreeString(tree, prefix = '') {
+            let result = '';
+            const entries = Object.entries(tree).sort(([a], [b]) => {
+                const aIsFolder = Object.keys(tree[a]).length > 0;
+                const bIsFolder = Object.keys(tree[b]).length > 0;
+                if (aIsFolder && !bIsFolder) return -1;
+                if (!aIsFolder && bIsFolder) return 1;
+                return a.localeCompare(b);
+            });
+            
+            entries.forEach(([name, subtree], index) => {
+                const isLast = index === entries.length - 1;
+                const connector = isLast ? '└── ' : '├── ';
+                const newPrefix = prefix + (isLast ? '    ' : '│   ');
+                
+                result += prefix + connector + name + '\n';
+                result += generateTreeString(subtree, newPrefix);
+            });
+            
+            return result;
+        }
+    </script>
+</body>
+</html>
